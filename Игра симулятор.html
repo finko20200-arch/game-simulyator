@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Семь ночей кометы — визуальная новелла</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/alice@5/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/manrope@5/index.css">
+<style>
+:root{
+  --ink:#eef1ff; --gold:#ffd98a; --panel:rgba(10,12,40,.82);
+  --rio:#ff8a5c; --ayana:#b18cff; --miyu:#7fe3e0; --ren:#6aa9ff; --mem:#ffd98a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#05061a}
+body{font-family:'Manrope',system-ui,sans-serif;color:var(--ink);user-select:none}
+#stage{position:fixed;inset:0;cursor:pointer}
+.bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1.1s ease}
+.bg.on{opacity:1}
+#spriteLayer{position:absolute;inset:0;z-index:5}
+.sprite{position:absolute;bottom:-1%;height:88%;aspect-ratio:3/4;pointer-events:none;transition:filter .45s ease}
+.sprite img{width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0;transform:translateY(18px);transition:transform .6s ease,opacity .6s ease;
+  -webkit-mask-image:radial-gradient(ellipse 62% 56% at 50% 45%, #000 58%, transparent 78%);
+  mask-image:radial-gradient(ellipse 62% 56% at 50% 45%, #000 58%, transparent 78%)}
+.sprite.shown img{opacity:1;transform:translateY(0)}
+.sprite.pos-l{left:3%}.sprite.pos-r{right:3%}.sprite.pos-c{left:50%;transform:translateX(-50%)}
+.sprite.dim{filter:brightness(.5) saturate(.75)}
+.sprite.speak{filter:brightness(1.06) drop-shadow(0 0 24px rgba(255,255,255,.12))}
+.sprite.speak img{transform:scale(1.02)}
+#vignette{position:absolute;inset:0;z-index:8;pointer-events:none;background:radial-gradient(ellipse at 50% 42%, transparent 52%, rgba(4,5,20,.62) 100%)}
+#topbar{position:absolute;top:0;left:0;right:0;z-index:25;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;gap:8px}
+#nightLabel{font-family:'Alice',serif;font-size:14px;letter-spacing:.06em;color:#dfe6ff;background:rgba(8,10,32,.6);padding:7px 16px;border-radius:999px;border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px)}
+.tbRight{display:flex;gap:8px;align-items:center}
+.pill{font-size:13px;font-weight:700;color:#cfe8ff;background:rgba(8,10,32,.6);padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px)}
+.tbBtn{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(8,10,32,.6);color:#fff;font-size:16px;cursor:pointer;backdrop-filter:blur(6px);transition:.2s}
+.tbBtn:hover{border-color:var(--gold);color:var(--gold)}
+#choices{position:absolute;left:50%;transform:translateX(-50%);bottom:200px;z-index:30;display:flex;flex-direction:column;gap:10px;width:min(700px,92%)}
+.choiceBtn{font-family:'Alice',serif;font-size:clamp(14px,2vmin,17px);text-align:left;color:#fff;padding:13px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.28);background:linear-gradient(180deg,rgba(20,24,66,.88),rgba(10,12,40,.9));cursor:pointer;backdrop-filter:blur(8px);animation:popIn .45s both;transition:transform .18s,border-color .18s,box-shadow .18s}
+.choiceBtn:hover{transform:translateY(-2px);border-color:var(--gold);box-shadow:0 8px 28px rgba(255,200,120,.22)}
+@keyframes popIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+#dialog{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:min(950px,94%);min-height:138px;z-index:20;background:linear-gradient(180deg,rgba(14,17,52,.85),rgba(7,9,30,.93));border:1px solid rgba(255,255,255,.16);border-radius:18px;backdrop-filter:blur(12px);padding:36px 28px 24px;box-shadow:0 14px 44px rgba(0,0,0,.5)}
+#dialog.hidden{display:none}
+#nameplate{position:absolute;top:-17px;left:22px;font-family:'Alice',serif;font-size:16px;letter-spacing:.08em;padding:7px 20px;border-radius:12px;background:var(--c,#7d8cff);color:#0b0e2a;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+#nameplate.memP{background:linear-gradient(135deg,#3a2c12,#6b4c17);color:var(--gold);border:1px solid rgba(255,217,138,.5)}
+#dtext{font-family:'Alice',serif;font-size:clamp(15px,2.2vmin,19px);line-height:1.6;min-height:3.4em;color:var(--ink)}
+#dialog.mem #dtext{font-style:italic;color:#ffe9c4;text-align:center}
+#advMark{position:absolute;right:18px;bottom:8px;font-size:12px;color:#9fe8c8;opacity:0;transition:opacity .2s}
+#advMark.show{opacity:1;animation:blink 1.1s infinite}
+@keyframes blink{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+#hint{position:absolute;left:16px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:19;font-size:11px;color:rgba(255,255,255,.35)}
+#toasts{position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{background:rgba(22,16,52,.9);border:1px solid rgba(255,217,138,.55);color:#ffe9c4;padding:8px 18px;border-radius:999px;font-size:14px;font-weight:700;animation:toastIn .3s ease,toastOut .5s ease 1.7s forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-10px)}}
+.ov{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(4,5,20,.78);backdrop-filter:blur(8px)}
+.hidden{display:none!important}
+#cardOv{background:radial-gradient(ellipse at 50% 30%, #1b2158 0%, #070822 70%);cursor:pointer;flex-direction:column;text-align:center}
+#cardOv .stars{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20% 30%,#fff 50%,transparent 50%),radial-gradient(1px 1px at 70% 20%,#fff 50%,transparent 50%),radial-gradient(2px 2px at 40% 70%,#ffe9c4 50%,transparent 50%),radial-gradient(1px 1px at 85% 60%,#fff 50%,transparent 50%),radial-gradient(1px 1px at 10% 80%,#9fd8ff 50%,transparent 50%),radial-gradient(1.5px 1.5px at 55% 45%,#fff 50%,transparent 50%);opacity:.7}
+#cardTitle{font-family:'Alice',serif;font-size:clamp(30px,6vmin,58px);letter-spacing:.12em;color:#fff;text-shadow:0 0 40px rgba(140,170,255,.6);animation:cardIn 1s both}
+#cardSub{font-family:'Alice',serif;font-size:clamp(14px,2.4vmin,20px);color:var(--gold);letter-spacing:.1em;margin-top:10px;animation:cardIn 1.2s both}
+#cardHint{position:absolute;bottom:34px;font-size:12px;color:rgba(255,255,255,.4);animation:blink 1.4s infinite}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px);letter-spacing:.3em}to{opacity:1}}
+#shardOv{background:rgba(4,5,20,.88);cursor:pointer;flex-direction:column;text-align:center}
+#shardIcon{font-size:64px;filter:drop-shadow(0 0 30px #7fd8ff);animation:shardPulse 1.4s infinite}
+@keyframes shardPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+#shardTitle{font-family:'Alice',serif;font-size:26px;color:#bfeaff;margin-top:14px}
+#shardCount{margin-top:8px;color:var(--gold);font-weight:700;letter-spacing:.2em}
+.panel{background:linear-gradient(180deg,rgba(16,19,56,.96),rgba(8,10,32,.98));border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:26px 28px;width:min(560px,92%);max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.panel h2{font-family:'Alice',serif;margin:0 0 16px;letter-spacing:.08em;color:#fff}
+.menuBtn{display:block;width:100%;margin:8px 0;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);color:#fff;font-family:'Manrope';font-weight:700;font-size:15px;cursor:pointer;transition:.2s;text-align:left}
+.menuBtn:hover{border-color:var(--gold);background:rgba(255,217,138,.08)}
+.charRow{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px dashed rgba(255,255,255,.12)}
+.charRow img{width:56px;height:56px;border-radius:50%;object-fit:cover;object-position:top;border:2px solid var(--c)}
+.charRow .nm{font-family:'Alice',serif;font-size:17px;color:var(--c)}
+.charRow .role{font-size:12px;color:rgba(255,255,255,.5)}
+.heartBar{margin-left:auto;display:flex;align-items:center;gap:6px}
+.heartBar .hb{width:110px;height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.heartBar .hb i{display:block;height:100%;background:linear-gradient(90deg,#ff6b8d,var(--c));border-radius:99px;transition:width .4s}
+.heartBar b{font-size:13px;color:var(--c)}
+.shardRow{display:flex;gap:10px;justify-content:center;margin-top:14px;font-size:26px}
+.shardRow span{filter:grayscale(1) brightness(.5)}
+.shardRow span.got{filter:none;text-shadow:0 0 16px #7fd8ff}
+#titleScreen{position:fixed;inset:0;z-index:90;background:linear-gradient(180deg,#070a26 0%,#141a4d 60%,#2a2f6e 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#starCanvas{position:absolute;inset:0}
+.tInner{position:relative;z-index:2;padding:20px}
+.tKicker{letter-spacing:.5em;font-size:12px;color:#8fa2ff;margin-bottom:14px}
+.tLogo{font-family:'Alice',serif;font-size:clamp(38px,8vmin,84px);line-height:1.05;color:#fff;text-shadow:0 0 60px rgba(140,170,255,.7)}
+.tLogo em{color:var(--gold);font-style:normal}
+.tTag{font-family:'Alice',serif;color:#b9c4ff;margin:16px 0 30px;font-size:clamp(14px,2.2vmin,18px)}
+.tBtn{display:block;margin:10px auto;min-width:260px;padding:14px 26px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(10,13,44,.7);color:#fff;font-family:'Alice',serif;font-size:17px;letter-spacing:.08em;cursor:pointer;transition:.25s;backdrop-filter:blur(6px)}
+.tBtn:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px);box-shadow:0 10px 30px rgba(255,200,120,.2)}
+.tBtn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.tCredit{position:absolute;bottom:14px;left:0;right:0;font-size:11px;color:rgba(255,255,255,.35);z-index:2}
+#endOv{background-size:cover;background-position:center;flex-direction:column}
+#endOv::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,6,26,.55),rgba(5,6,26,.92) 78%)}
+.endInner{position:relative;z-index:2;max-width:760px;width:92%;text-align:center;padding:20px;max-height:92vh;overflow:auto}
+.endKicker{letter-spacing:.45em;font-size:12px;color:var(--gold)}
+.endTitle{font-family:'Alice',serif;font-size:clamp(30px,5.5vmin,52px);color:#fff;margin:10px 0 20px;text-shadow:0 0 40px rgba(255,217,138,.35)}
+.endLines p{font-family:'Alice',serif;font-size:clamp(14px,2.1vmin,17px);line-height:1.7;color:#e8ecff;margin:0 0 12px}
+.endStats{margin:18px 0;font-size:13px;color:#9fb0e8;letter-spacing:.08em}
+.galItem{display:flex;gap:12px;align-items:center;padding:12px 4px;border-bottom:1px dashed rgba(255,255,255,.12)}
+.galItem .gi{font-size:22px}
+.galItem .gt{font-family:'Alice',serif;font-size:16px;color:#fff}
+.galItem .gd{font-size:12px;color:rgba(255,255,255,.5)}
+.galItem.locked .gt,.galItem.locked .gd{color:rgba(255,255,255,.3)}
+@media (max-width:640px){
+  .sprite{height:66%}
+  #dialog{padding:30px 18px 20px;min-height:120px}
+  #choices{bottom:170px}
+  #hint{display:none}
+}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg" id="bgA"></div>
+  <div class="bg on" id="bgB"></div>
+  <div id="spriteLayer"></div>
+  <div id="vignette"></div>
+  <div id="topbar">
+    <div id="nightLabel">Пролог</div>
+    <div class="tbRight">
+      <div class="pill" id="shardPill">💠 0 / 3</div>
+      <button class="tbBtn" id="btnStatus" title="Персонажи">♥</button>
+      <button class="tbBtn" id="btnMenu" title="Меню">☰</button>
+    </div>
+  </div>
+  <div id="choices"></div>
+  <div id="dialog" class="hidden">
+    <div id="nameplate"></div>
+    <div id="dtext"></div>
+    <div id="advMark">▼</div>
+  </div>
+  <div id="hint">клик / пробел — далее</div>
+  <div id="toasts"></div>
+</div>
+
+<div class="ov hidden" id="cardOv"><div class="stars"></div><div id="cardTitle"></div><div id="cardSub"></div><div id="cardHint">нажмите, чтобы продолжить</div></div>
+<div class="ov hidden" id="shardOv"><div id="shardIcon">💠</div><div id="shardTitle"></div><div id="shardCount"></div></div>
+
+<div class="ov hidden" id="menuOv"><div class="panel">
+  <h2>Меню</h2>
+  <button class="menuBtn" id="mSave">💾 Сохранить</button>
+  <button class="menuBtn" id="mLoad">📂 Загрузить</button>
+  <button class="menuBtn" id="mAuto"> Авто-режим: выкл</button>
+  <button class="menuBtn" id="mStatus">♥ Персонажи и осколки</button>
+  <button class="menuBtn" id="mTitle">🏠 На титульный экран</button>
+  <button class="menuBtn" id="mClose">✖ Закрыть</button>
+</div></div>
+
+<div class="ov hidden" id="statusOv"><div class="panel">
+  <h2>Дозор</h2>
+  <div id="statusBody"></div>
+  <div class="shardRow" id="shardRow"></div>
+  <button class="menuBtn" id="sClose" style="margin-top:18px">✖ Закрыть</button>
+</div></div>
+
+<div class="ov hidden" id="galOv"><div class="panel">
+  <h2>Развязки</h2>
+  <div id="galBody"></div>
+  <button class="menuBtn" id="gClose" style="margin-top:18px">✖ Закрыть</button>
+</div></div>
+
+<div class="ov hidden" id="endOv"><div class="endInner">
+  <div class="endKicker">РАЗВЯЗКА</div>
+  <div class="endTitle" id="endTitle"></div>
+  <div class="endLines" id="endLines"></div>
+  <div class="endStats" id="endStats"></div>
+  <button class="tBtn" id="endRestart">✦ Начать заново</button>
+  <button class="tBtn" id="endTitleBtn">🏠 На титульный экран</button>
+</div></div>
+
+<div id="titleScreen">
+  <canvas id="starCanvas"></canvas>
+  <div class="tInner">
+    <div class="tKicker">ВИЗУАЛЬНАЯ НОВЕЛЛА · СИМУЛЯТОР СВИДАНИЙ</div>
+    <div class="tLogo">СЕМЬ НОЧЕЙ<br><em>КОМЕТЫ</em></div>
+    <div class="tTag">Некоторые обещания ждут двенадцать лет.</div>
+    <button class="tBtn" id="tNew">✦ Новая игра</button>
+    <button class="tBtn" id="tCont">▶ Продолжить</button>
+    <button class="tBtn" id="tGal">❖ Развязки</button>
+  </div>
+  <div class="tCredit">Все персонажи и события вымышлены. Любые совпадения случайны. · Хосинохара ждёт тебя.</div>
+</div>
+
+<script>
+/* ============ ДАННЫЕ: ИЗОБРАЖЕНИЯ ============ */
+const BG={
+ station:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1adf1164d-37d9-444f-842e-76768590f014.png",
+ street:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1d44638b6-b658-47c7-ad40-b59a025549cb.png",
+ cafe:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/18d5cd922-8e3c-4eec-8ed8-bbc728623c18.png",
+ shrine:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/102a616d4-9fc9-414d-91c5-c29c1c3ad8f0.png",
+ pier:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1d2d022c9-203d-46c2-8361-7e8144928455.png",
+ observatory:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1d8a41945-8c93-41f1-86cb-d3b1e9021fe0.png",
+ festival:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1231d47cd-8bf5-44d3-86bd-3fce02fe05b6.png",
+ comet:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1777accc7-fbf8-4db9-9dd1-ca5fa2d07abd.png"
+};
+const CH={
+ rio_joy:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/14a3a2250-08c3-4b4d-ba6a-8e111f5d4b32.png",
+ rio_blush:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/19a03b0ea-6641-4ed0-a56d-4bc554294dcb.png",
+ ayana_smile:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1175256a4-2f97-4a39-9334-74764b395700.png",
+ ayana_sad:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1fec36eb0-fe1b-40ca-b02e-4ea208128e91.png",
+ miyu_calm:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/15cc6bec9-6846-4ddc-88d0-8b783b54d3c9.png",
+ miyu_sad:"https://image.qwenlm.ai/public_source/67841db2-cf67-4092-a813-f03ad6e4a020/1e6bd3bc0-1699-447d-92c9-ea98c09847d6.png"
+};
+const NAMES={rio:"Рио",ayana:"Аяна",miyu:"Мию",ren:"Рэн"};
+const COLORS={rio:"#ff8a5c",ayana:"#b18cff",miyu:"#7fe3e0",ren:"#6aa9ff",mem:"#ffd98a"};
+const GIRLS=[
+ {k:"rio",name:"Рио Кагами",role:"хозяйка кафе «Кометный хвост»",img:CH.rio_joy},
+ {k:"ayana",name:"Аяна Судзукадзе",role:"жрица храма и художница",img:CH.ayana_smile},
+ {k:"miyu",name:"Мию",role:"девушка с мола. Без тени.",img:CH.miyu_calm}
+];
+const SHARD_NAMES=["Записка из шкатулки","Капсула Дозора","Стеклянная карта"];
+const ENDINGS={
+ true:{title:"Истинное лето",bg:BG.comet,desc:"Желание отпущено. Юкино вернулась.",lines:[
+  "Я поднимаю хрустальный колокольчик над головой. Его звон — крошечный, но его слышит каждый в городе. И каждая звезда.",
+  "Мы говорим по очереди. Аяна — про рисунки, которые не стираются. Рио — про значки и кофе со звёздной пенкой. Я — про девочку, которая ловила светлячков громче всех нас, вместе взятых.",
+  "«Мы отпускаем тебя, Юкино. Спасибо за лето». Комета вздрагивает — и рассыпается на тысячу тёплых огней, как одуванчик на ветру.",
+  "Мию — Юкино — падает мне на руки. Тяжёлая. Тёплая. Настоящая. Она плачет впервые за двенадцать лет — и это самые живые слёзы, что я видел.",
+  "Город вспоминает всё за одну ночь. Наутро на площади появляется табличка «Сквер Юкино», а у «Кометного хвоста» — новая вывеска: «Здесь помнят каждое лето».",
+  "Кометы возвращаются раз в двенадцать лет. Нам больше не нужно их ждать: наше лето всегда с нами. Навсегда."]},
+ miyu:{title:"Хвост кометы",bg:BG.pier,desc:"Она ушла с кометой, оставив обещание вернуться.",lines:[
+  "Я хватаю её за руку — и мы бежим. Прочь от холма, от кометы, от правильного выбора. Вдоль моря, пока не кончаются фонари.",
+  "Мы прячемся в старом домике смотрителя и говорим обо всём на свете, пока ночь не становится прозрачной. Она смеётся. Она живая. Хотя бы эту ночь.",
+  "На рассвете её пальцы начинают светиться. Она улыбается — спокойно и без страха.",
+  "«Ты подарил мне то, чего не было даже в том лете. Побег. Спасибо, Рэн».",
+  "Она тает в моих руках снегом из света. Остаётся только стеклянная заколка-звезда — тёплая, как её ладонь.",
+  "«Через двенадцать лет я снова сойду с кометы. Жди меня на молу», — шепчет ветер.",
+  "Я жду. Каждое лето я прихожу на мол. И в этом году на календаре — снова двенадцатый год. Сегодня ночью небо над морем светится."]},
+ ayana:{title:"Обещание на холсте",bg:BG.shrine,desc:"Холст, на котором больше не стирают лица.",lines:[
+  "Я подхожу к Аяне. Она всё понимает без слов и сжимает мою ладонь — холодную от волнения, тёплую от решимости.",
+  "Юкино смотрит на нас и улыбается: «Вот теперь я за вас спокойна». Комета забирает её мягко, как мама — уснувшего ребёнка.",
+  "Аяна рисует всю ночь. Утром показывает холст: у Юкино есть лицо. Смеющееся. Живое.",
+  "«Больше не стирается, — говорит Аяна тихо. — Некоторые обещания исполняются именно так».",
+  "Через год её выставка «Дозор» гремит на весь регион. На главной картине — четверо детей под кометой. Подпись: «Тем, кто помнит».",
+  "А рядом с каждой картиной висит маленький хрустальный колокольчик. Он звенит сам по себе — всегда, когда мы приходим вдвоём."]},
+ rio:{title:"Кофе для двоих",bg:BG.cafe,desc:"Кафе, где помнят каждое лето.",lines:[
+  "Я нахожу в толпе Рио. Она всё понимает по моему лицу и крепко берёт меня за руку — как тогда, в детстве, когда мы убегали от грозы.",
+  "«Смотрим до конца, — говорит она. — Дозор своих не бросает».",
+  "Комета уходит, забирая Юкино. Но Рио поднимает ладонь к небу: «Клянусь: тебя будут помнить. Каждое утро. С кофе».",
+  "Через месяц в меню «Кометного хвоста» появляется напиток «Юкино» — кофе со звёздной пенкой. Каждый, кто его заказывает, слышит историю о девочке и комете.",
+  "Слухи, подписи, фестиваль — кафе отстояли. В ту ночь Рио звонила мне и плакала. Немного. Говорит, это от ветра.",
+  "Спустя два года я возвращаюсь в Хосинохару. Насовсем. На стене кафе висит фотография: четверо под кометой. Подпись детским почерком: «Дозору — быть»."]},
+ lonely:{title:"Город, который забыл",bg:BG.station,desc:"Некоторые поезда уходят без тебя.",lines:[
+  "Я остаюсь стоять. Слова застревают где-то между сердцем и горлом. Комета разгорается, гаснет и уходит за море — и уносит с собой белый силуэт.",
+  "Мию оборачивается в последний раз. Она не сердится. Она говорит одними губами: «Ничего. Я умею ждать».",
+  "Наутро город просыпается и забывает. Фестиваль, фонарики, девушка в белом — всё становится «просто сном».",
+  "Я уезжаю первым поездом. В кармане пальто лежит стеклянная звезда. Я не помню, откуда она. Я почти ничего не помню.",
+  "Но иногда, в самый тёмный час ночи, мне снится мол и голос: «Ты не должен был возвращаться... но я рада, что ты вернулся».",
+  "До возвращения кометы Лирэ — двенадцать лет. Я уже считаю дни."]}
+};
+const END_ORDER=["true","miyu","ayana","rio","lonely"];
+
+/* ============ СОСТОЯНИЕ ============ */
+let state=freshState();
+function freshState(){return {node:"p0",night:"Пролог",aff:{rio:0,ayana:0,miyu:0},shards:[],flags:{}};}
+let started=false, auto=false, autoT=null;
+const cur={evs:[],i:0,mode:"idle"};
+const $=s=>document.querySelector(s);
+
+/* ============ СЦЕНАРИЙ ============ */
+const say=(who,text)=>({t:"say",who,text});
+const narr=t=>({t:"say",who:null,text:t});
+const mem=t=>({t:"say",who:"mem",text:t});
+const show=(c,e,p)=>({t:"show",c,e,p:p||"c"});
+const bg=v=>({t:"bg",v});
+const card=(title,sub)=>({t:"card",title,sub});
+const go=v=>({t:"go",v});
+const choice=opts=>({t:"choice",opts});
+const clear={t:"clear"};
+const end=v=>({t:"end",v});
+
+const NODES={
+/* ---------- ПРОЛОГ ---------- */
+p0:()=>[bg("station"),card("Пролог","Поезд на Хосинохару"),clear,
+ narr("Поезд тормозит, и я узнаю этот запах: соль, нагретая хвоя и что-то едва уловимо сладкое, как вата на фестивале."),
+ narr("Двенадцать лет я не был в Хосинохаре. И двенадцать лет мне снится одно и то же: ночь, комета и голос, который зовёт меня по имени. А имени я не помню."),
+ narr("Бабушкино письмо лежит в кармане, мягкое от перечитываний: «Дом больше не может ждать. Приезжай до кометы, Рэн. Иначе всё повторится»."),
+ say("ren","Хосинохара... Я вернулся. Надеюсь, ты простишь меня за то, что я тебя забыл."),
+ show("rio","joy"),
+ say(null,"«Эй! Ты, с чемоданом! Стой-стой-стой!»"),
+ narr("В меня на полном ходу врезается девушка с огненно-рыжим хвостом. Пахнет кофе и корицей."),
+ say("rio","Так и знала! Рэн! Рэн Кацураги, собственной персоной!"),
+ say("ren","...Рио? Рио Кагами?! Ты... ты так изменилась."),
+ say("rio","А то! Двенадцать лет прошло! Я теперь не та мелочь, что таскала у деда печенье. Я — хозяйка кафе!"),
+ narr("Она смеётся точно так же, как в моих обрывках сна. Значит, детство было настоящим. Значит, я правда всё забыл."),
+ choice([
+  {text:"«Скучал по этому городу. И по тебе, кажется, тоже»",eff:{aff:["rio",1]},go:"p0_r1a"},
+  {text:"«Ты... ждала меня?»",eff:{aff:["rio",1]},go:"p0_r1b"},
+  {text:"«Я ненадолго. Разобрать бабушкин дом — и обратно»",go:"p0_r1c"}]),
+],
+p0_r1a:()=>[show("rio","blush"),say("rio","Ч-чего?! По мне, значит? Хех! Город тоже скучал. Я — особенно. То есть кафе! Кафе скучало, я сказала!"),go("p0_m1")],
+p0_r1b:()=>[show("rio","blush"),say("rio","Ждала?! Не придумывай! Просто... у нас тут фестиваль, рабочих рук не хватает. И вообще, ты загораживаешь выход. Идём, покажу дорогу!"),go("p0_m1")],
+p0_r1c:()=>[show("rio","joy"),say("rio","...Ясно. Ну, кофе всё равно заходи. За счёт заведения. То есть за мой счёт. То есть... просто заходи, ладно?"),go("p0_m1")],
+p0_m1:()=>[show("rio","joy"),
+ say("rio","Кафе «Кометный хвост» — теперь моё. Дед передал. Жду тебя каждый вечер, понял? Это не просьба, это приказ Кагами!"),
+ clear,bg("street"),
+ narr("Хосинохара готовится к празднику: вдоль улиц развешивают фонарики, и на каждом столбе — один и тот же плакат."),
+ narr("«Комета Лирэ возвращается через 7 ночей. Не пропустите главное небо десятилетия!»"),
+ say("ren","Комета... Вот почему бабушка позвала меня именно сейчас. Что-то случится на седьмую ночь. Что-то уже случалось — и я забыл."),
+ clear,bg("shrine"),show("ayana","smile"),
+ narr("У лестницы к храму, в последнем закатном луче, девушка рисует прямо на ступенях. Ветер шевелит её чёрные волосы, и она не замечает меня... или делает вид."),
+ narr("Она поднимает голову — и я забываю, как дышать. Фиалковые глаза. Я знаю эти глаза. Откуда я их знаю?"),
+ say("ayana","...Ты всё-таки приехал, Рэн-кун."),
+ say("ayana","Значит, колокольчик не ошибся. Он звенел всю ночь перед твоим приездом. Тихонько, чтобы не разбудить город."),
+ choice([
+  {text:"«Какой ещё колокольчик?»",eff:{aff:["ayana",1],flag:"bell"},go:"p0_a2a"},
+  {text:"«Мы... знакомы?»",eff:{aff:["ayana",1]},go:"p0_a2b"},
+  {text:"Промолчать и кивнуть",go:"p0_a2c"}]),
+],
+p0_a2a:()=>[show("ayana","smile"),say("ayana","Хрустальный. Он живёт в храме уже сто лет... или двенадцать. Здесь, у моря, время иногда путается, как нитки в корзине."),go("p0_m2")],
+p0_a2b:()=>[show("ayana","sad"),say("ayana","Ты правда не помнишь... Ничего. У нас есть семь ночей. Этого хватит, чтобы вспомнить всё — или простить."),go("p0_m2")],
+p0_a2c:()=>[show("ayana","smile"),say("ayana","Ты всё такой же. Слова экономишь, а глаза — нет. Двенадцать лет назад ты смотрел на звёзды точно так же."),go("p0_m2")],
+p0_m2:()=>[show("ayana","smile"),
+ say("ayana","Меня зовут Судзукадзе Аяна. Я присматриваю за храмом. И за одним старым обещанием. Но об этом — не сегодня. Сегодня тебе нужно к морю."),
+ narr("Она возвращается к рисунку. На бумаге — ночь, комета и три силуэта. Четвёртый она не дорисовывает. Или не может."),
+ clear,bg("pier"),
+ narr("К ночи я выхожу на мол. Море дышит медленно, как спящий зверь, и в его шкуре дрожат первые звёзды."),
+ narr("И тогда я вижу её. Девушка с волосами цвета лунного света стоит у самой кромки воды — босая, в белом платье. Будто сошла с открытки. Будто сошла с неба."),
+ show("miyu","calm"),
+ say("miyu","Ты не должен был возвращаться."),
+ say("miyu","...Но я так рада, что ты вернулся, Рэн."),
+ say("ren","Откуда ты знаешь моё имя? Мы... встречались?"),
+ show("miyu","sad"),
+ say("miyu","Встречались. В другом лете. Оно закончилось прежде, чем успело закончиться."),
+ narr("Она говорит загадками, но что-то внутри отзывается на её голос, как струна, которую задели во сне."),
+ say("miyu","У меня к тебе просьба. До возвращения кометы — семь ночей. Помоги мне успеть. Я ищу то, что потеряла."),
+ say("miyu","А взамен я помогу тебе вспомнить то, что потерял ты. Справедливо, правда?"),
+ choice([
+  {text:"«Помогу. Семь ночей так семь ночей»",eff:{aff:["miyu",2],flag:"promised"},go:"p0_m3a"},
+  {text:"«Сначала скажи, кто ты»",eff:{aff:["miyu",1]},go:"p0_m3b"},
+  {text:"«Звучит как ловушка из сказки»",go:"p0_m3c"}]),
+],
+p0_m3a:()=>[show("miyu","calm"),say("miyu","...Спасибо. Тогда договор. В этом городе обещания имеют вес — они тут тяжелее якорей. Я проверила."),go("n1")],
+p0_m3b:()=>[show("miyu","calm"),say("miyu","Мию. Моё имя — Мию. Фамилию я... не помню. Пока не помню. Странно, да? Девушка без фамилии и без тени."),go("n1")],
+p0_m3c:()=>[show("miyu","calm"),say("miyu","Все лучшие истории начинаются с ловушки. Я подожду у моря. У моря вообще много времени и мало гордости."),go("n1")],
+
+/* ---------- НОЧЬ 1 ---------- */
+n1:()=>[bg("street"),card("Ночь первая","Город, который ждал"),clear,
+ narr("Утро пахнет кофе и морем. Весь день я разбираю бабушкин дом и нахожу на чердаке жестяную коробку: значок из фольги, сломанный фонарик и фотографию."),
+ narr("На фото — четверо детей на фоне холма с обсерваторией. Один из них — я. Подпись выцвела до призрака."),
+ say("ren","«Звёздный дозор»... Что это было? Почему я не помню ни одного из этих лиц?"),
+ narr("Вечером город зовёт меня сразу на три стороны. Ноги сами несут к развилке."),
+ choice([
+  {text:"В кафе «Кометный хвост», к Рио",go:"n1_rio"},
+  {text:"К храму, к Аяне",go:"n1_ayana"},
+  {text:"На мол, к Мию",go:"n1_miyu"}]),
+],
+n1_rio:()=>[bg("cafe"),clear,show("rio","joy"),
+ say("rio","Явился! Садись у стойки — сейчас будет фирменный «Хвост кометы». Кофе со звёздной пенкой. Рецепт секретный, но тебе скажу: корица и чудо."),
+ narr("Кафе внутри тёплое, как карман: плакаты созвездий, подвесные модели планет и стойка, отполированная тремя поколениями Кагами."),
+ say("rio","Дед оставил мне его вместе с долгами и упрямством. Но я справлюсь! Кагами не сдаются!"),
+ say("rio","...Слушай, Рэн. Ты правда ничего не помнишь про то лето? Ну, когда мы были мелкими и носились тут, как комета по орбите?"),
+ choice([
+  {text:"«Помню обрывки. Комета... и нас было четверо»",eff:{aff:["rio",1],flag:"four"},go:"n1_rio_a"},
+  {text:"«Совсем ничего. Как отрезало»",go:"n1_rio_b"}]),
+],
+n1_rio_a:()=>[show("rio","blush"),say("rio","Четверо?.. Странно. Я всегда думала — трое. Но когда ты говоришь «четверо», у меня внутри что-то отзывается. Как эхо."),say("rio","Ладно! Кофе стынет. Дегустация!"),go("n2")],
+n1_rio_b:()=>[show("rio","blush"),say("rio","Как отрезало... Да. У меня так же. Бесит, если честно."),say("rio","Ладно! Кофе стынет. Дегустация!"),go("n2")],
+n1_ayana:()=>[bg("shrine"),clear,show("ayana","smile"),
+ say("ayana","Ты пришёл. Я оставила для тебя фонарик на третьей ступени — он горит с самого заката."),
+ narr("Храм маленький, с облупившейся красной колоннадой, но ухоженный: у каждой статуи — свежий цветок, у каждого фонарика — новая свеча."),
+ say("ayana","Храм хранит вещи, которые люди хотят сберечь. Письма, клятвы... обещания. Особенно те, что тяжелее якорей."),
+ say("ren","Аяна... можно посмотреть на колокольчик?"),
+ say("ayana","Можно. Но он звенит только тогда, когда сам захочет. Он у нас с характером."),
+ narr("В глубине храма, в стеклянном ящике, висит колокольчик из горного хрусталя. Внутри него, кажется, шевелится крошечная комета."),
+ choice([
+  {text:"Прикоснуться к стеклу",eff:{aff:["ayana",1],flag:"touched"},go:"n1_ay_a"},
+  {text:"Спросить, кто принёс колокольчик",eff:{aff:["ayana",1]},go:"n1_ay_b"}]),
+],
+n1_ay_a:()=>[show("ayana","smile"),narr("Стекло тёплое. Колокольчик вздрагивает — один-единственный, очень чистый звук, от которого у меня на глазах выступают слёзы."),say("ayana","Он тебя узнал, Рэн-кун."),go("n2")],
+n1_ay_b:()=>[show("ayana","sad"),say("ayana","Девочка. Двенадцать лет назад, в ночь кометы. Она попросила сохранить его «до следующего неба». Больше я её не видела. И, кажется... не только я."),go("n2")],
+n1_miyu:()=>[bg("pier"),clear,show("miyu","calm"),
+ narr("Мию сидит на самом краю мола, опустив ноги к воде. Ветер не шевелит её платье. Это странно — и почему-то совсем не удивляет."),
+ say("miyu","Ты пришёл. Я считала звёзды, чтобы не сомневаться. Досчитала до тысячи и перестала сомневаться."),
+ choice([
+  {text:"«Сомневаться в чём?»",go:"n1_m_a"},
+  {text:"«Считать звёзды вдвоём — так медленнее»",eff:{aff:["miyu",1]},go:"n1_m_b"}]),
+],
+n1_m_a:()=>[show("miyu","calm"),say("miyu","Придёшь ли ты. Обещания взрослых тают быстрее снега. Но твоё — другое. Оно тяжелее. Оно ждало тебя двенадцать лет."),go("n1_m_c")],
+n1_m_b:()=>[show("miyu","calm"),say("miyu","Вдвоём звёзды считаются медленнее. Это хорошо. Я хочу, чтобы эта ночь была длинной."),go("n1_m_c")],
+n1_m_c:()=>[show("miyu","calm"),
+ say("miyu","Рэн. Ты когда-нибудь видел комету вблизи? Не в небе. Вблизи."),
+ say("ren","Кометы не бывают вблизи. Они за миллионы километров."),
+ show("miyu","sad"),
+ say("miyu","Верно. За миллионы. И всё равно ближе, чем кажется."),
+ narr("Она поднимает ладонь к луне — и на секунду я вижу сквозь её пальцы свет. Наверное, показалось."),
+ say("miyu","Завтра я покажу тебе место, где падают желания. Приходи, если хочешь успеть вместе со мной."),
+ go("n2")],
+
+/* ---------- НОЧЬ 2 ---------- */
+n2:()=>[bg("street"),card("Ночь вторая","Три дороги"),clear,
+ narr("Днём я снова и снова смотрю на фотографию. Четверо. Я точно был не один — и нас точно было не трое."),
+ narr("К вечеру город снова зовёт. Куда пойдёшь?"),
+ choice([
+  {text:"В кафе, помочь Рио с фестивалем",go:"n2_rio"},
+  {text:"К храму — Аяна рисует при свечах",go:"n2_ayana"},
+  {text:"На мол — Мию обещала дайфуку",go:"n2_miyu"}]),
+],
+n2_rio:()=>[bg("cafe"),clear,show("rio","joy"),
+ narr("В кафе репетиция фестиваля: гирлянды, споры о танцах и столько шума, что звенят подвесные планеты."),
+ say("rio","Рэн! Отлично, нужен судья! Чья секция краше — моя или клуба рукоделия? Только честно, но сначала скажи «моя»."),
+ narr("Пока она носится между столами, я замечаю у доски записи: цифры, красные подчёркивания. Долги. Много."),
+ show("rio","blush"),
+ say("rio","...Чего смотришь? Это просто бухгалтерия. Скучища. Не смотри!"),
+ choice([
+  {text:"Предложить помощь с фестивалем",eff:{aff:["rio",2]},go:"n2_rio_a"},
+  {text:"Спросить про долги напрямую",eff:{aff:["rio",1]},go:"n2_rio_b"}]),
+],
+n2_rio_a:()=>[show("rio","blush"),say("rio","...Дурак. Никто не предлагает Кагами помощь просто так. ...Спасибо. Записываю тебя в добровольцы. Навсегда. Без увольнения."),go("n3")],
+n2_rio_b:()=>[show("rio","blush"),say("rio","Хех. Прямолинейный. Кафе на грани, да. Но я его вытащу. Это кафе видело наше лето — я его не отдам. Даже небу."),go("n3")],
+n2_ayana:()=>[bg("shrine"),clear,show("ayana","sad"),
+ narr("Аяна рисует при свечах. Перед ней — всё та же картина: комета и силуэты. Но сегодня четвёртая фигура чуть прорисована: белое платье."),
+ say("ayana","Я не вижу её лица. Рисую двенадцатый год, а лица нет. Как будто кто-то стёр его ластиком из памяти — аккуратно, чтобы не задеть остальное."),
+ say("ren","Аяна... кто она?"),
+ say("ayana","Не знаю. И это самое страшное. Я, хранительница чужих обещаний, не помню собственного."),
+ choice([
+  {text:"Попросить показать старую шкатулку",eff:{aff:["ayana",1],shard:"Записка из шкатулки"},go:"n2_ay_a"},
+  {text:"Рассказать ей о своей фотографии",eff:{aff:["ayana",1],flag:"shared"},go:"n2_ay_b"}]),
+],
+n2_ay_a:()=>[show("ayana","smile"),
+ say("ayana","...Ты знал? Я говорила себе: если он попросит — значит, время пришло."),
+ narr("В шкатулке — значок из фольги, как у меня на чердаке, и записка детским почерком: «Дозору — быть. Ю—». Дальше страница вырвана."),
+ narr("💠 Аяна бережно вкладывает записку мне в ладонь. Бумага пахнет летом, которого я не помню."),
+ go("n3")],
+n2_ay_b:()=>[show("ayana","smile"),say("ayana","Четверо... Покажешь мне её завтра? Пожалуйста. Мне кажется, если сложить две памяти — получится одна."),go("n3")],
+n2_miyu:()=>[bg("pier"),clear,show("miyu","calm"),
+ narr("Мию ждёт меня у мола с бумажным пакетом: внутри — две упаковки клубничного дайфуку."),
+ say("miyu","Я узнала, что люди едят сладкое, когда им грустно. Мне сегодня грустно. Проверим гипотезу?"),
+ narr("Она откусывает — и впервые улыбается по-настоящему: удивлённо, солнечно, совсем не загадочно."),
+ say("miyu","Это... восхитительно. Я буду помнить этот вкус. Я должна его помнить."),
+ choice([
+  {text:"Спросить, почему «должна»",go:"n2_m_a"},
+  {text:"Пообещать купить ещё две упаковки",eff:{aff:["miyu",1]},go:"n2_m_b"}]),
+],
+n2_m_a:()=>[show("miyu","calm"),say("miyu","Потому что меня не будет, когда комета уйдёт. А вкус останется. Значит, и я останусь — в нём. Логично?"),go("n2_m_c")],
+n2_m_b:()=>[show("miyu","calm"),say("miyu","Ты кормишь меня, как котёнка. Я не котёнок. ...Купи две."),go("n2_m_c")],
+n2_m_c:()=>[narr("Пока она ест, кончики её пальцев чуть светятся. Теперь мне не кажется."),
+ say("ren","Мию. Что с тобой происходит?"),
+ show("miyu","sad"),
+ say("miyu","Я трачу себя. Каждая ночь здесь стоит мне памяти. Я уже не помню фамилию. Дом. Мамино лицо."),
+ say("miyu","Но главное я помню: до седьмой ночи я должна вернуть этому городу то, что взяла. В четвёртую ночь я отведу тебя на холм обсерватории. Это важно. Обещаешь?"),
+ choice([
+  {text:"«Обещаю»",eff:{aff:["miyu",1],flag:"obs"},go:"n3"},
+  {text:"«Посмотрим»",go:"n3_obs2"}]),
+],
+n3_obs2:()=>[show("miyu","calm"),say("miyu","«Посмотрим» — это обещание, которое стесняется само себя. Я принимаю и его."),go("n3")],
+
+/* ---------- НОЧЬ 3 ---------- */
+n3:()=>[bg("street"),card("Ночь третья","Тайники"),clear,
+ narr("С утра идёт дождь — тёплый, летний, бесконечный. Плакаты кометы намокли и будто плачут серебряными слезами."),
+ narr("Именно в такие дни детство оставляет тайники. Куда пойдёшь?"),
+ choice([
+  {text:"В кафе — Рио гоняет всех по чердакам",go:"n3_rio"},
+  {text:"К храму — Аяна развешивает ленты желаний",go:"n3_ayana"},
+  {text:"На мол — Мию стоит под дождём",go:"n3_miyu"}]),
+],
+n3_rio:()=>[bg("cafe"),clear,show("rio","joy"),
+ narr("Из-за дождя репетицию перенесли в кафе, и Рио командует всеми, как генерал на параде."),
+ say("rio","Рэн! Раз ты пришёл — ты работаешь. Чердак. Коробки к фестивалю. Нужны. Бегом!"),
+ narr("Чердак «Кометного хвоста» — музей: гирлянды прошлых лет, афиши, кометы из папье-маше... и угол, заваленный детскими рисунками."),
+ narr("Под половицей, на которую я наступаю, что-то звякает. Половица — с секретом. Под ней — жестяная коробка, обмотанная бечёвкой."),
+ narr("На крышке выжжено детским почерком: «ЗВЁЗДНЫЙ ДОЗОР. ВСКРЫТЬ ПОД КОМЕТУ». Сердце у меня падает куда-то в пятки."),
+ choice([
+  {text:"Вскрыть сейчас",eff:{shard:"Капсула Дозора"},go:"n3_rio_a"},
+  {text:"Позвать Рио — вскрывать вместе",eff:{aff:["rio",1],shard:"Капсула Дозора"},go:"n3_rio_b"}]),
+],
+n3_rio_a:()=>[narr("Внутри — значки из фольги. Четыре. Карта холма с крестиком. И записка: «Если мы забудем — капсула вспомнит. Юкино»."),
+ show("rio","blush"),say("rio","«Юкино»... Почему у меня мурашки от этого имени? Рэн, кто это?! Почему я плачу?!"),go("n4")],
+n3_rio_b:()=>[narr("Рио поднимается, видит коробку — и замирает. Мы вскрываем её на двоих, плечом к плечу."),
+ narr("Внутри — значки из фольги. Четыре. Карта холма с крестиком. И записка: «Если мы забудем — капсула вспомнит. Юкино»."),
+ show("rio","blush"),say("rio","«Юкино»... Рэн, я помню это имя и не помню одновременно. Как будто оно написано на внутренней стороне век."),go("n4")],
+n3_ayana:()=>[bg("shrine"),clear,show("ayana","smile"),
+ narr("Храм дышит сыростью и благовониями. Аяна развешивает под крышей бумажные ленты с желаниями — дождь им не помеха."),
+ say("ayana","В дождь желания пишутся честнее. Людям некуда прятаться от мира — и от самих себя."),
+ say("ren","Аяна, я нашёл значок. «Звёздный дозор». Тебе о чём-то говорит это имя?"),
+ narr("Её кисть замирает над тушью. Капля падает на бумагу — как слеза."),
+ show("ayana","sad"),
+ say("ayana","Говорит. Каждую ночь. Я слышу, как кто-то зовёт нас по именам у обсерватории. Но имён — не помню."),
+ choice([
+  {text:"Рассказать всё: про фото, капсулу и Мию",eff:{aff:["ayana",2],flag:"told"},go:"n3_ay_a"},
+  {text:"Скрыть часть — не хочу её пугать",eff:{aff:["ayana",1]},go:"n3_ay_b"}]),
+],
+n3_ay_a:()=>[show("ayana","sad"),say("ayana","...Значит, нас было четверо. И она вернулась. Рэн, послушай: что бы ни случилось на седьмую ночь — не отпускай её руку. Ты уже однажды отпустил."),go("n3_ay_c")],
+n3_ay_b:()=>[show("ayana","sad"),say("ayana","Ты что-то недоговариваешь. Это твоё право. Но у недомолвок в этом городе привычка возвращаться кометами."),go("n3_ay_c")],
+n3_ay_c:()=>[show("ayana","smile"),say("ayana","Когда дождь стихнет — повесь ленту со своим именем. Я оставила тебе одну."),narr("На ленте уже написано моё имя. Аккуратным почерком Аяны."),go("n4")],
+n3_miyu:()=>[bg("pier"),clear,show("miyu","calm"),
+ narr("Мию стоит под единственным фонарём. Дождь идёт — но не касается её: капли огибают её, как планеты — звезду."),
+ say("ren","Мию! Ты же промо..."),
+ narr("Я осекаюсь. Она не может промокнуть. И мы оба это знаем."),
+ say("miyu","Я не умею промокать. Это одна из вещей, которые я хотела бы попробовать. Промокнуть. Простудиться. Выздороветь."),
+ choice([
+  {text:"Отдать ей свой зонт — пусть даже в этом нет смысла",eff:{aff:["miyu",2]},go:"n3_m_a"},
+  {text:"Спросить, что она хочет успеть",eff:{aff:["miyu",1]},go:"n3_m_b"}]),
+],
+n3_m_a:()=>[show("miyu","calm"),say("miyu","...Он не нужен мне. Но я возьму. Теперь у меня есть зонт! У Мию есть зонт! Это почти как быть живой."),go("n3_m_c")],
+n3_m_b:()=>[show("miyu","calm"),say("miyu","Список?.. Карамельное яблоко. Золотая рыбка. Маска лисы. Побег с холма под падающим светом. ...Странно, последнее я уже где-то чувствовала."),go("n3_m_c")],
+n3_m_c:()=>[show("miyu","calm"),say("miyu","В четвёртую ночь — обсерватория. Не опоздай. Там лежит то, что я искала все двенадцать лет. Я чувствую."),go("n4")],
+
+/* ---------- НОЧЬ 4 ---------- */
+n4:()=>[bg("street"),card("Ночь четвёртая","Холм, где падают желания"),clear,
+ narr("До кометы — три ночи. Город уже не спит: репетиции, гирлянды, споры до хрипоты о том, какой танец лучше."),
+ narr("А я всё чаще смотрю на холм с обсерваторией. Что-то ждёт меня наверху. Кто-то."),
+ choice([
+  {text:"На холм обсерватории, с Мию",go:"n4_obs"},
+  {text:"В кафе — у Рио человек в сером костюме",go:"n4_cafe"},
+  {text:"К храму — Аяна дорисовала лицо",go:"n4_shrine"}]),
+],
+n4_obs:()=>[bg("observatory"),clear,show("miyu","calm"),
+ narr("Холм обсерватории встречает нас морем огней внизу и океаном звёзд вверху. Старый купол телескопа приоткрыт, как уснувший глаз."),
+ say("miyu","Здесь. Я точно знаю. Здесь я... что-то оставила. Или кого-то."),
+ narr("Она бродит среди камней, и я замечаю: в лунном свете её тень чуть запаздывает. Как эхо."),
+ say("ren","Где искать? Подскажи."),
+ say("miyu","Не знаю... Сердце подсказывает два места. Старый телескоп — и щель купола, куда падает свет кометы."),
+ choice([
+  {text:"Искать под старым телескопом",go:"n4_obs_a"},
+  {text:"Там, где падает свет кометы",eff:{shard:"Стеклянная карта"},go:"n4_obs_b"}]),
+],
+n4_obs_a:()=>[narr("Мы переворачиваем камни у ржавой трубы телескопа. Пусто. Только старый значок из фольги — мой, судя по всему."),
+ show("miyu","sad"),say("miyu","Ничего... Значит, я искала не там. Значит, мне ещё рано вспоминать."),
+ say("ren","Мы найдём. Я с тобой — до седьмой ночи и после."),go("n5")],
+n4_obs_b:()=>[narr("Луч лунного света проходит через щель купола и ложится на плиту, поросшую мхом. Под плитой — жестяная труба. Внутри — стеклянная карта звёздного неба и детский рисунок: трое детей и девочка с белыми волосами. Подпись: «Юкино и её Дозор»."),
+ show("miyu","sad"),
+ say("miyu","Юкино... Это имя. Оно... моё? Рэн. Это моё имя?!"),
+ say("ren","Думаю, да. Мию — это Юкино."),
+ say("miyu","Юкино... Мию... Я была той, кто загадал желание. Я почти вспомнила. Осталась одна ночь. Самая страшная."),
+ narr("💠 Стеклянная карта холодит ладонь. На ней гравировка: «Тому, кто отпустит»."),
+ go("n5")],
+n4_cafe:()=>[bg("cafe"),clear,show("rio","joy"),
+ narr("В кафе сегодня тихо и тревожно: у стойки сидит человек в сером костюме и перекладывает бумаги, как карточный шулер."),
+ say("rio","Рэн! Отлично, что ты здесь. Это... гость из города."),
+ narr("«После фестиваля квартал идёт под оценку, — говорит человек, не поднимая глаз. — Предложение о выкупе действует до конца месяца». Дверь за ним закрывается, как крышка."),
+ show("rio","blush"),
+ say("rio","Слышал? «Предложение». Да я бы скорее сама себя выкупила!.. Прости. Сорвалась."),
+ choice([
+  {text:"«Я помогу. Подписи, вечер кометы — весь город встанет за кафе»",eff:{aff:["rio",2]},go:"n4_cafe_a"},
+  {text:"«Может... правда продать? Начнёшь с чистого листа»",eff:{aff:["rio",1]},go:"n4_cafe_b"}]),
+],
+n4_cafe_a:()=>[show("rio","joy"),say("rio","...Ты серьёзно? Рэн, ты гений! Подписи, вечер, музыка! Дед бы сказал: «Наконец-то у тебя появился толковый напарник»!"),narr("До полуночи мы пишем афиши. Её плечо иногда касается моего, и оба мы делаем вид, что это случайность."),go("n5")],
+n4_cafe_b:()=>[show("rio","blush"),say("rio","Продать?! Это кафе помнит наше лето!.. ...Прости. Я знаю, ты хочешь как лучше. Просто это кафе — единственное место, где я помню себя счастливой. И тебя — тоже."),narr("Она отворачивается, но я успеваю заметить: в глазах блестит. Не от злости."),go("n5")],
+n4_shrine:()=>[bg("shrine"),clear,show("ayana","smile"),
+ narr("В храме непривычно тихо. Аяна стоит перед мольбертом, и кисть в её руке дрожит."),
+ show("ayana","sad"),
+ say("ayana","Посмотри. Я дорисовала её лицо, Рэн. Я рисовала его двенадцать лет, не зная, — а сегодня оно просто... вспомнилось. Само."),
+ narr("С холста на меня смотрит девушка с волосами цвета лунного света. Девушка с мола. Мию."),
+ say("ren","Аяна... ты знаешь её?"),
+ say("ayana","Не знаю. Помню. Это разные слова, когда речь о забытом лете."),
+ choice([
+  {text:"Показать ей фотографию Дозора",eff:{aff:["ayana",2]},go:"n4_shr_a"},
+  {text:"Взять её за руку: «Ты не одна»",eff:{aff:["ayana",2],flag:"hugged"},go:"n4_shr_b"}]),
+],
+n4_shr_a:()=>[show("ayana","sad"),say("ayana","Четверо... Вот мы. Вот она. Рэн, посмотри, как мы смеялись. Как мы могли забыть таких себя?"),narr("Мы сидим на ступенях храма до темноты и по крупицам собираем общее прошлое — как два разбитых зеркала складываются в одно."),go("n5")],
+n4_shr_b:()=>[show("ayana","smile"),say("ayana","...Спасибо. Знаешь, жрицы хранят чужие обещания. А своё я, кажется, всё это время хранила сама: дождаться тебя."),narr("Закат догорает, и впервые за долгое время Аяна улыбается без тени грусти."),go("n5")],
+
+/* ---------- НОЧЬ 5 ---------- */
+n5:()=>[bg("street"),card("Ночь пятая","Канун"),clear,
+ narr("Фестиваль начинается уже сегодня, хотя комета придёт только на седьмую ночь. Город не умеет ждать спокойно."),
+ narr("У меня три приглашения на вечер — и только один я. Сердце стучит, как перед экзаменом."),
+ choice([
+  {text:"Встать «вторым номером» у прилавка Рио",eff:{aff:["rio",2]},go:"n5_rio"},
+  {text:"Развешивать фонарики с Аяной",eff:{aff:["ayana",2]},go:"n5_ayana"},
+  {text:"Провести вечер с Мию среди огней",eff:{aff:["miyu",2]},go:"n5_miyu"}]),
+],
+n5_rio:()=>[bg("festival"),clear,show("rio","joy"),
+ narr("У прилавка Рио я встаю «вторым номером»: принимаю монеты, улыбаюсь гостям, сбиваюсь, смеюсь."),
+ say("rio","Видишь? У тебя получается! Ещё немного — и я повышу тебя до напарника Кагами. Это выше, чем кажется."),
+ narr("Когда толпа редеет, мы забираемся на крышу кафе с двумя стаканами лимонада. Внизу город репетирует фестиваль."),
+ show("rio","blush"),
+ say("rio","Знаешь, что дед говорил? «Этот мальчик вернётся, когда небу будет нужно». Я думала — стариковские сказки. А теперь смотрю на тебя и думаю..."),
+ choice([
+  {text:"«Я вернулся ради этого города»",eff:{aff:["rio",1]},go:"n5_rio_a"},
+  {text:"«Может, я вернулся ради тебя»",eff:{aff:["rio",2]},go:"n5_rio_b"}]),
+],
+n5_rio_a:()=>[show("rio","blush"),say("rio","Город, значит... Ладно! Городу тоже нужна была моя гениальная улыбка. Но ты всё равно молодец, что приехал."),go("n6")],
+n5_rio_b:()=>[show("rio","blush"),say("rio","...Дурак. Скажешь тоже... при всех звёздах... Запомни: это ты сказал, не я! И я... тоже рада, Рэн. Очень."),go("n6")],
+n5_ayana:()=>[bg("shrine"),clear,show("ayana","smile"),
+ narr("Мы развешиваем ритуальные фонарики над храмовой рощей. Аяна пишет на каждом — тонко, как вышивает."),
+ say("ayana","Фонарик принимает желание, а потом отпускает его в небо. Так оно учится летать само."),
+ say("ren","А твоё желание, Аяна?"),
+ show("ayana","sad"),
+ say("ayana","Моё желание одно: чтобы завтра я помнила сегодня. Чтобы не стиралось. Чтобы те, кого я люблю, оставались нарисованными."),
+ choice([
+  {text:"«Я буду помнить за нас двоих»",eff:{aff:["ayana",2]},go:"n5_ay_a"},
+  {text:"«Загадай смелее. Я помогу исполнить»",eff:{aff:["ayana",1]},go:"n5_ay_b"}]),
+],
+n5_ay_a:()=>[show("ayana","smile"),say("ayana","...Тогда держи. Половина моего желания — теперь твоя. Береги её, как фонарик на ветру."),narr("Она вкладывает мне в ладони фонарик с моим именем. Наши пальцы снова встречаются — и в этот раз никто не отстраняется."),go("n6")],
+n5_ay_b:()=>[show("ayana","smile"),say("ayana","Смелее?.. Хорошо. Тогда: пусть на седьмую ночь я успею сказать тебе то, что не решалась двенадцать лет. ...Узнаешь в свой срок."),go("n6")],
+n5_miyu:()=>[bg("festival"),clear,show("miyu","calm"),
+ narr("Мию идёт через фестиваль, как через музей: трогает маски кончиками пальцев, пробует яблоко в карамели, замирает у лотка с золотыми рыбками."),
+ say("miyu","Рэн, смотри! Рыбка в пакете с водой — это же маленькое море, которое можно унести с собой! Можно мне такое?"),
+ narr("Она смеётся так, что прохожие оборачиваются. А потом вдруг замирает — на полсекунды слишком неподвижно, как кадр с плёнки."),
+ show("miyu","sad"),
+ say("miyu","...Прости. Иногда я «подвисаю», как старая пластинка. Если я исчезну посреди праздника — съешь мою порцию ваты. Обещаешь?"),
+ choice([
+  {text:"«Не исчезай. Это не просьба — это приказ Дозора»",eff:{aff:["miyu",2]},go:"n5_m_a"},
+  {text:"«Обещаю. Но лучше держись меня»",eff:{aff:["miyu",1]},go:"n5_m_b"}]),
+],
+n5_m_a:()=>[show("miyu","calm"),say("miyu","...Приказ Дозора. Хорошо, командир. Я постараюсь держаться. Ради ваты и... ещё кое-чего тёплого."),go("n6")],
+n5_m_b:()=>[show("miyu","calm"),say("miyu","Держаться тебя... Знаешь, за семь ночей я узнала о людях больше, чем за двенадцать лет в хвосте кометы. Люди — тёплые. Ты — особенно."),go("n6")],
+
+/* ---------- НОЧЬ 6 ---------- */
+n6:()=>[bg("festival"),card("Ночь шестая","Фестиваль"),clear,
+ narr("Шестая ночь. Фестиваль в разгаре: музыка, маски рыбок, запах жареной лапши и огоньки до самого моря."),
+ show("rio","joy","l"),show("miyu","calm","c"),show("ayana","smile","r"),
+ narr("Мы встречаемся у сцены все трое: Рио с подносом лимонада, Аяна с фонариком-звездой и Мию — в белом кимоно, которое ей подарили лавочницы."),
+ say("rio","Эй, у меня перерыв ровно десять минут! Хватайте лимонад, пока я добрая!"),
+ say("ayana","Я принесла фонарик. Если отпустить его с холма на седьмую ночь, желание услышит сама комета."),
+ say("miyu","А я принесла... себя. Это, кажется, самое ценное, что у меня осталось."),
+ narr("Мы смеёмся. На одну секунду всё как в детстве — и тут над городом гаснет свет."),
+ narr("Весь. Сразу. Музыка обрывается, и в наступившей тишине слышно, как где-то высоко звенит хрусталь."),
+ clear,show("miyu","sad"),
+ narr("Мию падает. Я успеваю подхватить её — и мои ладони наполовину проходят сквозь неё, как сквозь утренний туман."),
+ say("ren","Мию! Мию, посмотри на меня!"),
+ say("miyu","Рано... ещё одна ночь... подожди... я почти целая..."),
+ show("ayana","sad"),
+ narr("Из её ладони выпадает стеклянная звезда. Аяна поднимает её — и роняет фонарик."),
+ say("ayana","Я помню... Рэн, я вспомнила! Юкино! Дочь смотрителя обсерватории! Нас было четверо! Мы были Дозором!"),
+ say("rio","Юкино... девочка, которая ловила светлячков быстрее всех... Как я могла забыть?! КАК МЫ МОГЛИ?!"),
+ narr("Свет возвращается. Город вздыхает, не понимая, что сейчас произошло. А я вспоминаю всё — сразу, как лавину."),
+ mem("Нам было по семь. Лето, обсерватория, клятвы на мизинцах и значки из фольги, как у настоящих рыцарей."),
+ mem("В последнюю ночь того лета отец Юкино сказал: они уезжают. Насовсем. В город, где нет моря и нет нас."),
+ mem("Юкино подняла лицо к комете и загадала вслух, на всех: «Пусть это лето не кончается. Пусть мы никогда не расстанемся»."),
+ mem("Комета ответила. Лето и правда не кончилось — оно застыло, как янтарь, с нами внутри. А Юкино комета забрала. Как сердце желания."),
+ mem("Мы забыли её, чтобы не умереть от вины. Город забыл вместе с нами. Двенадцать лет тишины."),
+ show("miyu","calm"),
+ narr("Мию открывает глаза. Теперь в них нет загадки — только огромная усталость и двенадцать лет ожидания."),
+ say("miyu","Теперь вы помните. Значит, осталось последнее. На холме, под кометой. Я вернусь в своё желание — и заберу его с собой."),
+ say("ren","И что тогда будет с тобой?"),
+ say("miyu","...Я вернусь туда, где была эти двенадцать лет. В хвост кометы. Там красиво, Рэн. Только очень одиноко."),
+ say("ren","Нет. Должен быть другой способ!"),
+ say("miyu","Есть. Желание можно отпустить. Добровольно. Все, кто его держит, — вместе. Но его двенадцать лет никто не решался произнести."),
+ say("ayana","Тогда мы его отпустим."),
+ say("rio","Вместе. Как Дозор. Дозор своих не бросает — даже если «свои» — это целое желание."),
+ narr("Мию улыбается. Но я вижу: она чего-то не договаривает. Слово «отпустить» звучит из её уст слишком похоже на «прощай»."),
+ choice([
+  {text:"Пойти с Аяной к храму — за колокольчиком",eff:{aff:["ayana",2]},go:"n6_a"},
+  {text:"Пойти с Рио на крышу кафе",eff:{aff:["rio",2]},go:"n6_r"},
+  {text:"Остаться с Мию до рассвета",eff:{aff:["miyu",2]},go:"n6_m"}]),
+],
+n6_a:()=>[bg("shrine"),clear,show("ayana","smile"),
+ say("ayana","Колокольчик ждал этого дня. Возьми его на холм. Он признаёт того, кто забыл — и простил себя за это."),
+ narr("Она вкладывает хрусталь мне в ладони. Наши пальцы встречаются, и Аяна не убирает руку."),
+ show("ayana","sad"),
+ say("ayana","Рэн... Если желание отпустят — вдруг вместе с ним отпустят и нас? Вдруг мы снова всё забудем?"),
+ choice([
+  {text:"«Тогда я запишу всё. И буду читать тебе каждое утро»",eff:{aff:["ayana",1]},go:"n6_a2"},
+  {text:"«Мы запомним. Обещаю тебе»",eff:{aff:["ayana",1]},go:"n6_a2"}]),
+],
+n6_a2:()=>[show("ayana","smile"),say("ayana","...Хорошо. Тогда — седьмая ночь. Холм. Не опаздывай: обещания не любят ждать дольше двенадцати лет."),go("n7")],
+n6_r:()=>[bg("cafe"),clear,show("rio","joy"),
+ narr("Мы сидим на крыше кафе. Внизу спит город, а над нами — репетиция кометы: звёзды выстроились в очередь."),
+ say("rio","Смотри. Я перевесила вывеску. Старую, дедову. Она ждала этого дня в кладовой."),
+ narr("В лунном свете блестит свежая краска: «ЗВЁЗДНЫЙ ДОЗОР. ОСНОВАН ДВЕНАДЦАТЬ ЛЕТ НАЗАД. РАБОТАЕТ ВЕЧНО»."),
+ show("rio","blush"),
+ say("rio","Если кафе переживёт эту ночь — оно будет помнить за весь город. Я прослежу лично."),
+ say("rio","...Рэн. Что бы завтра ни случилось — спасибо, что вернулся. Без тебя этот Дозор был бы недозором."),
+ choice([
+  {text:"«Дозор — это вы. А я так, при комете»",eff:{aff:["rio",1]},go:"n6_r2"},
+  {text:"«Без тебя, Рио, не было бы никакого лета»",eff:{aff:["rio",2]},go:"n6_r2"}]),
+],
+n6_r2:()=>[show("rio","blush"),say("rio","Дурак. ...Спасибо. А теперь иди спать. Завтра главный день, а у тебя вид, как у невыспавшегося светлячка."),go("n7")],
+n6_m:()=>[bg("pier"),clear,show("miyu","calm"),
+ narr("Мы сидим на молу, свесив ноги к воде. Мию просит описать ей обычную человеческую жизнь. Во всех подробностях."),
+ say("miyu","Простуда — это как? Говорят, неприятно. Мне бы хотелось узнать. И очередь в магазине. И потерянный зонтик."),
+ narr("Я рассказываю про дождь, очереди, пригоревший завтрак и смешные носки. Она слушает, как другие слушают симфонии."),
+ say("miyu","Значит, жить — это когда мелкие неудобства складываются в счастье. Я бы хотела... попробовать."),
+ choice([
+  {text:"«У тебя ещё будет время. Много»",eff:{aff:["miyu",1]},go:"n6_m2"},
+  {text:"«Я покажу тебе всё сам. Каждую мелочь»",eff:{aff:["miyu",2]},go:"n6_m2"}]),
+],
+n6_m2:()=>[show("miyu","calm"),say("miyu","Рэн... что бы ни случилось завтра на холме — знай: это были лучшие семь ночей за двенадцать лет. Для меня — единственные."),say("miyu","А теперь поспи. Кометы не любят невыспавшихся свидетелей."),go("n7")],
+
+/* ---------- НОЧЬ 7 ---------- */
+n7:()=>[bg("comet"),card("Ночь седьмая","Комета Лирэ"),clear,
+ narr("Седьмая ночь. Небо над Хосинохарой горит: комета Лирэ поднимается из-за моря, белая и огромная, как сбывшееся пророчество."),
+ narr("На холме у обсерватории нас четверо — как тогда. Аяна держит хрустальный колокольчик. Рио — капсулу времени. Я — всё, что смог собрать за эти семь ночей."),
+ show("miyu","calm"),
+ say("miyu","Вот и всё. Спасибо, что дошли со мной до конца, Дозор."),
+ narr("Комета раскрывает хвост, и время вокруг замирает: фонарики внизу застыли, как светлячки в янтаре. Весь город затаил дыхание."),
+ say("miyu","У вас последний выбор. Мой последний подарок. Я приму любой — вы и так вернули мне больше, чем я теряла."),
+ choice([
+  {text:"💠 Поднять колокольчик и отпустить желание — вместе, как Дозор",req:s=>s.shards.length>=3,go:"end_true"},
+  {text:"Взять Мию за руку и бежать — прочь от кометы",req:s=>s.aff.miyu>=5,go:"end_miyu"},
+  {text:"Подойти к Аяне: «Что бы ни случилось — останься со мной»",req:s=>s.aff.ayana>=5,go:"end_ayana"},
+  {text:"Подойти к Рио: «Держи меня за руку. Вместе до конца»",req:s=>s.aff.rio>=5,go:"end_rio"},
+  {text:"Просто смотреть на комету",go:"end_lonely"}]),
+],
+end_true:()=>[narr("Я поднимаю колокольчик над головой. Аяна кивает. Рио открывает капсулу. Мию закрывает глаза."),
+ say("ren","Лето двенадцатилетней давности! Мы, Дозор, отпускаем тебя! Спасибо, что хранило нас. Юкино — живи!"),
+ narr("Каждый говорит своё воспоминание — вслух, в небо. Колокольчик звенит, и его звон слышит каждая звезда."),end("true")],
+end_miyu:()=>[narr("Я хватаю её за руку. Ладонь — как лёд и как пламя одновременно."),
+ say("ren","Бежим. Прямо сейчас. Дозор не отпускает своих — даже если «свои» — это сама комета."),
+ say("miyu","Рэн... ты сумасшедший. ...Мне нравится. Бежим!"),
+ narr("Мы бежим с холма под падающим светом, и за спиной у нас ахает город, а впереди — целая ночь. Последняя и бесконечная."),end("miyu")],
+end_ayana:()=>[narr("Я подхожу к Аяне и беру её за руку. Она не вздрагивает — только сжимает пальцы крепче."),
+ say("ayana","Я поняла. Я не буду просить невозможного. Я буду помнить — за нас всех."),
+ say("miyu","Вот теперь я спокойна. Берегите друг друга, Дозор. Это и было моим настоящим желанием."),end("ayana")],
+end_rio:()=>[narr("Я нахожу Рио в толпе. Она видит моё лицо — и всё понимает без слов."),
+ say("rio","Смотрим до конца. Держись за меня, если станет страшно. ...Держись в любом случае."),
+ say("miyu","Спасибо тебе, Рио. За кофе, за значки, за то, что научила меня смеяться громко."),end("rio")],
+end_lonely:()=>[narr("Я не делаю ни шага. Слова застревают где-то между сердцем и горлом, и комета начинает таять — сама, без прощаний."),
+ say("miyu","Рэн... ничего. Правда. Я умею ждать. Я очень хорошо умею ждать."),end("lonely")],
+};
+
+/* ============ ДВИЖОК ============ */
+let bgFront=true, typing=false, typeTimer=null, fullText="";
+const sprites={};
+function setBg(key){
+ const src=BG[key]; if(!src)return;
+ const showEl=bgFront?$("#bgA"):$("#bgB"), hideEl=bgFront?$("#bgB"):$("#bgA");
+ showEl.style.backgroundImage="url("+src+")";
+ showEl.classList.add("on"); hideEl.classList.remove("on"); bgFront=!bgFront;
+}
+function showChar(c,e,p){
+ let s=sprites[c];
+ if(!s){ s=document.createElement("div"); s.className="sprite"; const im=document.createElement("img"); s.appendChild(im); $("#spriteLayer").appendChild(s); sprites[c]=s; }
+ s.querySelector("img").src=CH[c+"_"+e];
+ s.classList.remove("pos-l","pos-c","pos-r"); s.classList.add("pos-"+p);
+ requestAnimationFrame(()=>s.classList.add("shown"));
+}
+function clearChars(){ Object.keys(sprites).forEach(k=>{sprites[k].remove(); delete sprites[k];}); setSpeaker(null); }
+function setSpeaker(key){
+ Object.keys(sprites).forEach(k=>{
+  sprites[k].classList.remove("dim","speak");
+  if(key && k===key) sprites[k].classList.add("speak");
+  else if(key) sprites[k].classList.add("dim");
+ });
+}
+function step(){
+ clearTimeout(autoT);
+ const evs=cur.evs;
+ while(cur.i<evs.length){
+  const e=evs[cur.i++];
+  if(e.t==="bg"){ setBg(e.v); continue; }
+  if(e.t==="show"){ showChar(e.c,e.e,e.p); continue; }
+  if(e.t==="clear"){ clearChars(); continue; }
+  if(e.t==="card"){ showCard(e); return; }
+  if(e.t==="say"){ showSay(e); return; }
+  if(e.t==="choice"){ showChoice(e.opts); return; }
+  if(e.t==="go"){ go(e.v); return; }
+  if(e.t==="end"){ showEnding(e.v); return; }
+ }
+}
+function go(id){
+ state.node=id; saveGame();
+ cur.evs=NODES[id](); cur.i=0; cur.mode="idle";
+ step();
+}
+function showCard(e){
+ cur.mode="card";
+ state.night=e.title; $("#nightLabel").textContent=e.title;
+ $("#cardTitle").textContent=e.title; $("#cardSub").textContent=e.sub||"";
+ const ov=$("#cardOv"); ov.classList.remove("hidden");
+ ov.onclick=()=>{ ov.classList.add("hidden"); ov.onclick=null; cur.mode="idle"; step(); };
+}
+function showSay(e){
+ cur.mode="say";
+ const np=$("#nameplate"), dt=$("#dtext"), box=$("#dialog");
+ box.classList.remove("hidden");
+ if(e.who==="mem"){ np.style.display=""; np.textContent="✦ Память"; np.className="memP"; np.id="nameplate"; box.classList.add("mem"); }
+ else if(e.who){ np.style.display=""; np.textContent=NAMES[e.who]; np.className=""; np.style.setProperty("--c",COLORS[e.who]); box.classList.remove("mem"); }
+ else { np.style.display="none"; box.classList.remove("mem"); }
+ setSpeaker(e.who && e.who!=="mem" ? e.who : null);
+ fullText=e.text; dt.textContent=""; typing=true; $("#advMark").classList.remove("show");
+ clearInterval(typeTimer); let i=0;
+ typeTimer=setInterval(()=>{ i++; dt.textContent=fullText.slice(0,i); if(i>=fullText.length) doneType(); },15);
+}
+function doneType(){
+ clearInterval(typeTimer); typing=false; $("#dtext").textContent=fullText;
+ $("#advMark").classList.add("show");
+ if(auto) autoT=setTimeout(()=>{ if(cur.mode==="say"&&!typing){ cur.mode="idle"; step(); } },1400);
+}
+function showChoice(opts){
+ cur.mode="choice";
+ const list=opts.filter(o=>!o.req||o.req(state));
+ const box=$("#choices"); box.innerHTML="";
+ $("#dialog").classList.add("hidden");
+ list.forEach((o,idx)=>{
+  const b=document.createElement("button");
+  b.className="choiceBtn"; b.style.animationDelay=(idx*90)+"ms"; b.textContent=o.text;
+  b.onclick=ev=>{ ev.stopPropagation(); pick(o); };
+  box.appendChild(b);
+ });
+}
+function pick(o){
+ $("#choices").innerHTML=""; $("#dialog").classList.remove("hidden");
+ if(o.eff) applyEff(o.eff);
+ go(o.go);
+}
+function applyEff(eff){
+ if(eff.aff){ state.aff[eff.aff[0]]+=eff.aff[1]; toast("♥ "+NAMES[eff.aff[0]]+" +"+eff.aff[1]); }
+ if(eff.flag){ state.flags[eff.flag]=true; }
+ if(eff.shard){ addShard(eff.shard); }
+}
+function addShard(name){
+ if(state.shards.includes(name)) return;
+ state.shards.push(name);
+ $("#shardPill").textContent="💠 "+state.shards.length+" / 3";
+ $("#shardTitle").textContent="Осколок памяти: "+name;
+ $("#shardCount").textContent=state.shards.length+" / 3";
+ const ov=$("#shardOv"); ov.classList.remove("hidden");
+ ov.onclick=()=>{ ov.classList.add("hidden"); ov.onclick=null; };
+ setTimeout(()=>{ if(!ov.classList.contains("hidden")){ ov.classList.add("hidden"); ov.onclick=null; } },2600);
+}
+function advance(){
+ if(!started) return;
+ if(cur.mode==="card"){ const ov=$("#cardOv"); if(ov.onclick) ov.onclick(); return; }
+ if(cur.mode==="say"){
+  if(typing){ doneType(); }
+  else { cur.mode="idle"; step(); }
+ }
+}
+$("#stage").addEventListener("click",()=>{ if(!$("#shardOv").classList.contains("hidden")){ const ov=$("#shardOv"); if(ov.onclick)ov.onclick(); return; } advance(); });
+document.addEventListener("keydown",e=>{
+ if(e.code==="Space"||e.code==="Enter"){ e.preventDefault();
+  if(!$("#shardOv").classList.contains("hidden")){ const ov=$("#shardOv"); if(ov.onclick)ov.onclick(); return; }
+  advance();
+ }
+ if(e.code==="Escape"){ ["menuOv","statusOv","galOv"].forEach(id=>$("#"+id).classList.add("hidden")); }
+});
+function toast(msg){
+ const t=document.createElement("div"); t.className="toast"; t.textContent=msg;
+ $("#toasts").appendChild(t); setTimeout(()=>t.remove(),2400);
+}
+
+/* ============ КОНЦОВКИ / СЕРВИС ============ */
+function showEnding(id){
+ cur.mode="end";
+ const list=JSON.parse(localStorage.getItem("comet7_endings")||"[]");
+ if(!list.includes(id)){ list.push(id); localStorage.setItem("comet7_endings",JSON.stringify(list)); }
+ const E=ENDINGS[id];
+ $("#endOv").style.backgroundImage="url("+E.bg+")";
+ $("#endTitle").textContent=E.title;
+ $("#endLines").innerHTML=E.lines.map(l=>"<p>"+l+"</p>").join("");
+ $("#endStats").textContent="♥ Рио "+state.aff.rio+" · ♥ Аяна "+state.aff.ayana+" · ♥ Мию "+state.aff.miyu+" · 💠 осколки "+state.shards.length+"/3";
+ $("#endOv").classList.remove("hidden");
+}
+function saveGame(){ localStorage.setItem("comet7_save",JSON.stringify(state)); }
+function loadGame(){
+ const raw=localStorage.getItem("comet7_save"); if(!raw) return false;
+ try{ state=JSON.parse(raw); }catch(e){ return false; }
+ $("#shardPill").textContent="💠 "+state.shards.length+" / 3";
+ $("#nightLabel").textContent=state.night||"Пролог";
+ return true;
+}
+function newGame(){
+ state=freshState();
+ $("#shardPill").textContent="💠 0 / 3";
+ clearChars(); started=true;
+ $("#titleScreen").style.display="none";
+ $("#endOv").classList.add("hidden");
+ go("p0");
+}
+function buildStatus(){
+ const body=$("#statusBody"); body.innerHTML="";
+ GIRLS.forEach(g=>{
+  const v=state.aff[g.k]||0;
+  const row=document.createElement("div"); row.className="charRow"; row.style.setProperty("--c",COLORS[g.k]);
+  row.innerHTML="<img src='"+g.img+"' alt=''><div><div class='nm'>"+g.name+"</div><div class='role'>"+g.role+"</div></div>"+
+   "<div class='heartBar'><div class='hb'><i style='width:"+Math.min(100,v*10)+"%'></i></div><b>"+v+"</b></div>";
+  body.appendChild(row);
+ });
+ const sr=$("#shardRow"); sr.innerHTML="";
+ SHARD_NAMES.forEach(n=>{
+  const s=document.createElement("span"); s.textContent="💠"; s.title=n;
+  if(state.shards.includes(n)) s.classList.add("got");
+  sr.appendChild(s);
+ });
+}
+function buildGallery(){
+ const list=JSON.parse(localStorage.getItem("comet7_endings")||"[]");
+ const body=$("#galBody"); body.innerHTML="";
+ END_ORDER.forEach(id=>{
+  const E=ENDINGS[id], got=list.includes(id);
+  const d=document.createElement("div"); d.className="galItem"+(got?"":" locked");
+  d.innerHTML="<div class='gi'>"+(got?"✦":"")+"</div><div><div class='gt'>"+(got?E.title:"???")+"</div><div class='gd'>"+(got?E.desc:"Эта развязка ещё не найдена...")+"</div></div>";
+  body.appendChild(d);
+ });
+}
+
+/* ============ КНОПКИ ============ */
+$("#tNew").onclick=()=>newGame();
+$("#tCont").onclick=()=>{ if(loadGame()){ clearChars(); started=true; $("#titleScreen").style.display="none"; go(state.node); } };
+$("#tGal").onclick=()=>{ buildGallery(); $("#galOv").classList.remove("hidden"); };
+$("#gClose").onclick=e=>{ e.stopPropagation(); $("#galOv").classList.add("hidden"); };
+$("#btnStatus").onclick=e=>{ e.stopPropagation(); buildStatus(); $("#statusOv").classList.remove("hidden"); };
+$("#sClose").onclick=e=>{ e.stopPropagation(); $("#statusOv").classList.add("hidden"); };
+$("#btnMenu").onclick=e=>{ e.stopPropagation(); $("#menuOv").classList.remove("hidden"); };
+$("#mClose").onclick=e=>{ e.stopPropagation(); $("#menuOv").classList.add("hidden"); };
+$("#mSave").onclick=e=>{ e.stopPropagation(); saveGame(); toast("💾 Сохранено"); };
+$("#mLoad").onclick=e=>{ e.stopPropagation(); if(loadGame()){ clearChars(); started=true; $("#menuOv").classList.add("hidden"); $("#titleScreen").style.display="none"; go(state.node); toast("📂 Загружено"); } else toast("Нет сохранения"); };
+$("#mAuto").onclick=e=>{ e.stopPropagation(); auto=!auto; e.target.textContent="⏩ Авто-режим: "+(auto?"вкл":"выкл"); };
+$("#mStatus").onclick=e=>{ e.stopPropagation(); $("#menuOv").classList.add("hidden"); buildStatus(); $("#statusOv").classList.remove("hidden"); };
+$("#mTitle").onclick=e=>{ e.stopPropagation(); $("#menuOv").classList.add("hidden"); started=false; $("#titleScreen").style.display="flex"; refreshCont(); };
+$("#endRestart").onclick=e=>{ e.stopPropagation(); newGame(); };
+$("#endTitleBtn").onclick=e=>{ e.stopPropagation(); $("#endOv").classList.add("hidden"); started=false; $("#titleScreen").style.display="flex"; refreshCont(); };
+["menuOv","statusOv","galOv","shardOv"].forEach(id=>{ $("#"+id).addEventListener("click",e=>{ if(e.target.id===id) $("#"+id).classList.add("hidden"); }); });
+function refreshCont(){ $("#tCont").disabled=!localStorage.getItem("comet7_save"); }
+
+/* ============ ЗВЁЗДНОЕ НЕБО НА ТИТУЛЕ ============ */
+const cv=$("#starCanvas"), cx=cv.getContext("2d");
+let stars=[], shoot=null;
+function sizeCv(){ cv.width=innerWidth; cv.height=innerHeight; stars=[]; for(let i=0;i<140;i++) stars.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.4+.3,s:Math.random()*.4+.08,p:Math.random()*6.28}); }
+sizeCv(); addEventListener("resize",sizeCv);
+function tick(t){
+ if($("#titleScreen").style.display!=="none"){
+  cx.clearRect(0,0,cv.width,cv.height);
+  stars.forEach(st=>{ st.y+=st.s; if(st.y>cv.height)st.y=0;
+   const a=.4+.6*Math.abs(Math.sin(t/900+st.p));
+   cx.globalAlpha=a; cx.fillStyle="#fff"; cx.beginPath(); cx.arc(st.x,st.y,st.r,0,6.28); cx.fill(); });
+  cx.globalAlpha=1;
+  if(!shoot && Math.random()<.006) shoot={x:Math.random()*cv.width*.7,y:Math.random()*cv.height*.3,vx:6+Math.random()*4,vy:3+Math.random()*2,life:1};
+  if(shoot){ shoot.x+=shoot.vx; shoot.y+=shoot.vy; shoot.life-=.02;
+   const g=cx.createLinearGradient(shoot.x,shoot.y,shoot.x-shoot.vx*8,shoot.y-shoot.vy*8);
+   g.addColorStop(0,"rgba(255,240,200,"+Math.max(0,shoot.life)+")"); g.addColorStop(1,"rgba(255,240,200,0)");
+   cx.strokeStyle=g; cx.lineWidth=2; cx.beginPath(); cx.moveTo(shoot.x,shoot.y); cx.lineTo(shoot.x-shoot.vx*8,shoot.y-shoot.vy*8); cx.stroke();
+   if(shoot.life<=0) shoot=null; }
+ }
+ requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+refreshCont();
+</script>
+</body>
+</html>

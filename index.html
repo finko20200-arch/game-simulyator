@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="description" content="Семь ночей кометы — визуальная новелла о любви, обещаниях и звёздах">
+  <title>Семь ночей кометы — визуальная новелла</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alice&family=Manrope:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="stage" role="application" aria-label="Игровое поле">
+  <!-- Background layers -->
+  <div class="bg" id="bgA" aria-hidden="true"></div>
+  <div class="bg on" id="bgB" aria-hidden="true"></div>
+  
+  <!-- Sprite layer -->
+  <div id="spriteLayer" aria-hidden="true"></div>
+  
+  <!-- Vignette effect -->
+  <div id="vignette" aria-hidden="true"></div>
+  
+  <!-- Top bar -->
+  <div id="topbar">
+    <div id="nightLabel">Пролог</div>
+    <div class="tbRight">
+      <div class="pill" id="shardPill" aria-label="Осколки памяти">💠 0 / 3</div>
+      <button class="tbBtn" id="btnStatus" title="Персонажи" aria-label="Показать персонажей">♥</button>
+      <button class="tbBtn" id="btnMenu" title="Меню" aria-label="Открыть меню">☰</button>
+    </div>
+  </div>
+  
+  <!-- Choices container -->
+  <div id="choices" role="group" aria-label="Выбор действий"></div>
+  
+  <!-- Dialog box -->
+  <div id="dialog" class="hidden" role="dialog" aria-live="polite">
+    <div id="nameplate" aria-label="Имя говорящего"></div>
+    <div id="dtext" aria-label="Текст диалога"></div>
+    <div id="advMark" aria-hidden="true">▼</div>
+  </div>
+  
+  <!-- Hint -->
+  <div id="hint">клик / пробел — далее</div>
+  
+  <!-- Toast notifications -->
+  <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+</div>
+
+<!-- Card overlay -->
+<div class="ov hidden" id="cardOv" role="dialog" aria-modal="true" tabindex="0">
+  <div class="stars" aria-hidden="true"></div>
+  <div id="cardTitle"></div>
+  <div id="cardSub"></div>
+  <div id="cardHint">нажмите, чтобы продолжить</div>
+</div>
+
+<!-- Shard overlay -->
+<div class="ov hidden" id="shardOv" role="dialog" aria-modal="true" tabindex="0">
+  <div id="shardIcon" aria-hidden="true">💠</div>
+  <div id="shardTitle"></div>
+  <div id="shardCount"></div>
+</div>
+
+<!-- Menu overlay -->
+<div class="ov hidden" id="menuOv" role="dialog" aria-modal="true">
+  <div class="panel">
+    <h2>Меню</h2>
+    <button class="menuBtn" id="mSave">💾 Сохранить</button>
+    <button class="menuBtn" id="mLoad">📂 Загрузить</button>
+    <button class="menuBtn" id="mAuto"> Авто-режим: выкл</button>
+    <button class="menuBtn" id="mStatus">♥ Персонажи и осколки</button>
+    <button class="menuBtn" id="mTitle">🏠 На титульный экран</button>
+    <button class="menuBtn" id="mClose">✖ Закрыть</button>
+  </div>
+</div>
+
+<!-- Status overlay -->
+<div class="ov hidden" id="statusOv" role="dialog" aria-modal="true">
+  <div class="panel">
+    <h2>Дозор</h2>
+    <div id="statusBody"></div>
+    <div class="shardRow" id="shardRow" aria-label="Собранные осколки"></div>
+    <button class="menuBtn" id="sClose" style="margin-top:18px">✖ Закрыть</button>
+  </div>
+</div>
+
+<!-- Gallery overlay -->
+<div class="ov hidden" id="galOv" role="dialog" aria-modal="true">
+  <div class="panel">
+    <h2>Развязки</h2>
+    <div id="galBody"></div>
+    <button class="menuBtn" id="gClose" style="margin-top:18px">✖ Закрыть</button>
+  </div>
+</div>
+
+<!-- Ending overlay -->
+<div class="ov hidden" id="endOv" role="dialog" aria-modal="true">
+  <div class="endInner">
+    <div class="endKicker">РАЗВЯЗКА</div>
+    <div class="endTitle" id="endTitle"></div>
+    <div class="endLines" id="endLines"></div>
+    <div class="endStats" id="endStats"></div>
+    <button class="tBtn" id="endRestart">✦ Начать заново</button>
+    <button class="tBtn" id="endTitleBtn">🏠 На титульный экран</button>
+  </div>
+</div>
+
+<!-- Title screen -->
+<div id="titleScreen" role="screen" aria-label="Главное меню">
+  <canvas id="starCanvas" aria-hidden="true"></canvas>
+  <div class="tInner">
+    <div class="tKicker">ВИЗУАЛЬНАЯ НОВЕЛЛА · СИМУЛЯТОР СВИДАНИЙ</div>
+    <div class="tLogo">СЕМЬ НОЧЕЙ<br><em>КОМЕТЫ</em></div>
+    <div class="tTag">Некоторые обещания ждут двенадцать лет.</div>
+    <button class="tBtn" id="tNew">✦ Новая игра</button>
+    <button class="tBtn" id="tCont">▶ Продолжить</button>
+    <button class="tBtn" id="tGal">❖ Развязки</button>
+  </div>
+  <div class="tCredit">Все персонажи и события вымышлены. Любые совпадения случайны. · Хосинохара ждёт тебя.</div>
+</div>
+
+<!-- Scripts - Load order matters -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/story.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
